@@ -51,7 +51,7 @@ export default async function onReady(client, database) {
     }
   }, config.TIMERS.CLEANUP_INTERVAL_MINUTES * 60 * 1000);
 
-  // Set up periodic UTC clock update (every minute)
+  // Set up periodic UTC clock update (every 5 minutes, but only update when time changes significantly)
   setInterval(async () => {
     console.log("Running periodic UTC clock update...");
     for (const guild of client.guilds.cache.values()) {
@@ -62,20 +62,22 @@ export default async function onReady(client, database) {
             ch.type === ChannelType.GuildVoice
         );
         if (channel) {
-          const newName = getCurrentUTCName();
+          const newName = getCurrentUTCNameRounded(); // Use rounded time to reduce updates
           if (channel.name !== newName) {
             console.log(
               `Updating UTC clock to ${newName} in ${guild.name} from ${channel.name}`
             );
             await channel.setName(newName);
             console.log(`Updated UTC clock to ${newName} in ${guild.name}`);
+          } else {
+            console.log(`UTC clock already up to date in ${guild.name}: ${newName}`);
           }
         }
       } catch (error) {
         console.error(`Failed to update UTC clock in ${guild.name}:`, error);
       }
     }
-  }, 60 * 1000);
+  }, 5 * 60 * 1000); // Check every 5 minutes
 }
 
 function getContentTypeColor(contentType) {
@@ -94,6 +96,15 @@ function getCurrentUTCName() {
   const hours = now.getUTCHours().toString().padStart(2, "0");
   const minutes = now.getUTCMinutes().toString().padStart(2, "0");
   return `${UTC_CLOCK_PREFIX} ${hours}:${minutes}`;
+}
+
+function getCurrentUTCNameRounded() {
+  const now = new Date();
+  const hours = now.getUTCHours().toString().padStart(2, "0");
+  // Round to nearest 5 minutes to reduce updates
+  const minutes = Math.round(now.getUTCMinutes() / 5) * 5;
+  const roundedMinutes = minutes.toString().padStart(2, "0");
+  return `${UTC_CLOCK_PREFIX} ${hours}:${roundedMinutes}`;
 }
 
 async function initializeRosterSystem(guild, database) {
