@@ -11,12 +11,12 @@ const config = JSON.parse(fs.readFileSync(configPath, "utf-8"));
 
 const CLOCK_CHANNEL_NAME = config.CHANNELS.CLOCK_CHANNEL;
 const PARTY_FINDER_CHANNEL_NAME = config.CHANNELS.PARTY_FINDER;
+const UTC_CLOCK_PREFIX = config.CHANNELS.UTC_CLOCK_PREFIX;
 const CLOCKED_IN_ROLE_NAME = config.ROLES.CLOCKED_IN;
 const CONTENT_TYPES = config.ROLES.CONTENT_TYPES;
 
 export default async function onReady(client, database) {
   console.log(`🔄 onReady event triggered!`);
-
   // Log guild information
   client.guilds.cache.forEach((guild) => {
     console.log(
@@ -50,6 +50,32 @@ export default async function onReady(client, database) {
       }
     }
   }, config.TIMERS.CLEANUP_INTERVAL_MINUTES * 60 * 1000);
+
+  // Set up periodic UTC clock update (every minute)
+  setInterval(async () => {
+    console.log("Running periodic UTC clock update...");
+    for (const guild of client.guilds.cache.values()) {
+      try {
+        let channel = guild.channels.cache.find(
+          (ch) =>
+            ch.name.startsWith(UTC_CLOCK_PREFIX) &&
+            ch.type === ChannelType.GuildVoice
+        );
+        if (channel) {
+          const newName = getCurrentUTCName();
+          if (channel.name !== newName) {
+            console.log(
+              `Updating UTC clock to ${newName} in ${guild.name} from ${channel.name}`
+            );
+            await channel.setName(newName);
+            console.log(`Updated UTC clock to ${newName} in ${guild.name}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Failed to update UTC clock in ${guild.name}:`, error);
+      }
+    }
+  }, 60 * 1000);
 }
 
 function getContentTypeColor(contentType) {
@@ -61,6 +87,13 @@ function getContentTypeColor(contentType) {
     ROADS: 0xffd93d, // Yellow
   };
   return colors[contentType] || 0x99aab5; // Default gray
+}
+
+function getCurrentUTCName() {
+  const now = new Date();
+  const hours = now.getUTCHours().toString().padStart(2, "0");
+  const minutes = now.getUTCMinutes().toString().padStart(2, "0");
+  return `${UTC_CLOCK_PREFIX} ${hours}:${minutes}`;
 }
 
 async function initializeRosterSystem(guild, database) {
@@ -248,6 +281,42 @@ async function initializeRosterSystem(guild, database) {
       `✅ Found existing ${PARTY_FINDER_CHANNEL_NAME} channel with ID: ${partyFinderChannel.id}`
     );
   }
+  // Ensure the UTC clock voice channel exists
+  let utcClockChannel = guild.channels.cache.find(
+    (ch) =>
+      ch.name.startsWith(UTC_CLOCK_PREFIX) && ch.type === ChannelType.GuildVoice
+  );
+
+  if (!utcClockChannel) {
+    console.log(`📝 Creating UTC clock channel...`);
+    try {
+      const initialName = getCurrentUTCName();
+      utcClockChannel = await guild.channels.create({
+        name: initialName,
+        type: ChannelType.GuildVoice,
+        position: 0,
+        permissionOverwrites: [
+          {
+            id: guild.id, // @everyone
+            allow: [PermissionsBitField.Flags.ViewChannel],
+            deny: [
+              PermissionsBitField.Flags.Connect,
+              PermissionsBitField.Flags.Speak,
+            ],
+          },
+        ],
+      });
+      console.log(
+        `✅ Created UTC clock channel with ID: ${utcClockChannel.id}`
+      );
+    } catch (error) {
+      console.error(`❌ Failed to create UTC clock channel:`, error);
+    }
+  } else {
+    console.log(
+      `✅ Found existing UTC clock channel with ID: ${utcClockChannel.id}`
+    );
+  }
 
   // Create clock buttons in the clock-station channel
   if (clockChannel) {
@@ -411,6 +480,37 @@ export async function verifyAndCreateMissingChannels(
         `❌ Failed to create missing ${PARTY_FINDER_CHANNEL_NAME} channel:`,
         error
       );
+    }
+  }
+  // Check UTC clock voice channel
+  let utcClockChannelVerify = guild.channels.cache.find(
+    (ch) =>
+      ch.name.startsWith(UTC_CLOCK_PREFIX) && ch.type === ChannelType.GuildVoice
+  );
+
+  if (!utcClockChannelVerify) {
+    console.log(`📝 Creating missing UTC clock channel...`);
+    try {
+      const initialName = getCurrentUTCName();
+      utcClockChannelVerify = await guild.channels.create({
+        name: initialName,
+        type: ChannelType.GuildVoice,
+        position: 0,
+        permissionOverwrites: [
+          {
+            id: guild.id, // @everyone
+            allow: [PermissionsBitField.Flags.ViewChannel],
+            deny: [
+              PermissionsBitField.Flags.Connect,
+              PermissionsBitField.Flags.Speak,
+            ],
+          },
+        ],
+      });
+      console.log(`✅ Created missing UTC clock channel`);
+      channelsUpdated = true;
+    } catch (error) {
+      console.error(`❌ Failed to create missing UTC clock channel:`, error);
     }
   }
 

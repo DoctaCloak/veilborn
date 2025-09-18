@@ -27,7 +27,8 @@
     "PARTY_FINDER": "party-finder",
     "STAFF_COMMANDS": "staff-commands",
     "STAFF_NOTIFICATIONS": "🤖┃recruiter-bot-questions",
-    "BOT_COMMANDS": "bot-commands"
+    "BOT_COMMANDS": "bot-commands",
+    "UTC_CLOCK_PREFIX": "🕛 UTC:"
   },
   "TIMERS": {
     "AUTO_CLOCK_OUT_HOURS": 4,
