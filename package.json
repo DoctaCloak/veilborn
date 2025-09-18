@@ -1,0 +1,35 @@
+{
+  "name": "veilborn-bot",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Comprehensive Discord bot for Veilborn guild in Albion Online, handling recruitment, party finding, and server management",
+  "main": "app.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.x"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "start:debug": "node --inspect-brk app.js",
+    "register": "node deploy-commands.js",
+    "dev": "nodemon app.js",
+    "test-token": "node test-token.js"
+  },
+  "author": "UnshakenVoid",
+  "license": "MIT",
+  "dependencies": {
+    "@discordjs/rest": "^2.4.0",
+    "axios": "^1.7.9",
+    "chalk": "^5.3.0",
+    "cron": "^3.3.2",
+    "discord-api-types": "^0.37.110",
+    "discord-interactions": "^4.0.0",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "mongodb": "^6.12.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  }
+}
