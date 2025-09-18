@@ -43,7 +43,7 @@ let database = null;
  */
 async function connectDatabase() {
   await MONGO_CLIENT.connect();
-  database = MONGO_CLIENT.db("veilborn");
+  database = MONGO_CLIENT.db("admin");
   // Ping for sanity check
   await database.command({ ping: 1 });
   console.log("Successfully connected to MongoDB!");
